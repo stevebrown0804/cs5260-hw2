@@ -2,6 +2,7 @@ import argparse
 import boto3 as boto3
 from botocore.exceptions import ClientError
 import logging
+import time
 import json
 import unittest
 
@@ -23,11 +24,11 @@ if args.write_to:
 
 # Initialize logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='example.log', filemode='w',
+logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
                     format='%(levelname)s: %(message)s', encoding='utf-8', )
 
 
-# The following function adapted from:
+# The following functions adapted from:
 #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
 def list_objects(bucket):
     try:
@@ -40,36 +41,47 @@ def list_objects(bucket):
         return objects
 
 
+def delete(self):
+    """
+    Deletes the object.
+    """
+    try:
+        self.object.delete()
+        self.object.wait_until_not_exists()
+        logger.info(
+            "Deleted object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
+    except ClientError:
+        logger.exception(
+            "Couldn't delete object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
+        raise
+
+
 # Create the bucket(s)
 s3 = boto3.resource('s3')
 bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
 
-# WIDGETS #
-# create, update and delete widgets
-# store the widget(s) in bucket 3 or in the dynamoDB 'widgets' table
-
-# check bucket2 for the presence of a widget ####
-objs = list_objects(bucket2)
+# check bucket2 for the presence of a widget #
 #  if it's there, read it, delete it and add it to <wherever>
-if len(objs) > 0:
-    # the_object = objs[0]
-    the_object = s3.Object(bucket2, objs[0])
-    logger.info('Looking at object: %s', the_object)
-    bucket2.download_file(the_object, 'the_object')
-    the_object.delete()
-    # ...and write it to the write-to target TODO
+done = False  # Note: Never actually set to true!
+while not done:
+    objs = list_objects(bucket2)
+    if len(objs) > 0:
+        the_object = s3.Object(bucket2, objs[0]).key.key
+        logger.info('Looking at object: %s', the_object)
+        bucket2.download_file(the_object, 'the_object')  # s3.download_file('BUCKET_NAME', 'OBJECT_NAME', 'FILE_NAME')
+        s3.Object(bucket2, objs[0]).key.delete()
+        # ...and write it to the write-to target TODO
+        #   create, update and delete widgets
+        #   store the widget(s) in bucket 3 or in the dynamoDB 'widgets' table
+        #
+    else:
+        # if it's not, wait 100ms and try again
+        time.sleep(0.1)
 
-
-# s3 = boto3.client('s3')
-# s3.download_file('BUCKET_NAME', 'OBJECT_NAME', 'FILE_NAME')
-
-# if it's not, wait 100ms and try again
-
-
-# Doin' some logging
-logger.debug('This message should go to the log file')
-logger.info('So should this')
-logger.warning('And this, too')
-logger.error('And non-ASCII stuff, too, like Øresund and Malmö')
+# Logging examples:
+# logger.debug('This message should go to the log file')
+# logger.info('So should this')
+# logger.warning('And this, too')
+# logger.error('And non-ASCII stuff, too, like Øresund and Malmö')
