@@ -11,8 +11,8 @@ import unittest
 
 # Parse the command-line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests")
-parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or widgets_table")
+parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests or bucket2")
+parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or bucket3 or widgets_table")
 args = parser.parse_args()
 if args.read_from:
     read_from = args.read_from
@@ -42,9 +42,6 @@ def list_objects(bucket):
 
 
 def delete(self):
-    """
-    Deletes the object.
-    """
     try:
         self.object.delete()
         self.object.wait_until_not_exists()
@@ -70,7 +67,8 @@ while not done:
     if len(objs) > 0:
         the_object = s3.Object(bucket2, objs[0]).key.key
         logger.info('Looking at object: %s', the_object)
-        bucket2.download_file(the_object, 'the_object')  # s3.download_file('BUCKET_NAME', 'OBJECT_NAME', 'FILE_NAME')
+        # bucket2.download_file(the_object, 'the_object')
+        bucket2.download_file(the_object, the_object)
         s3.Object(bucket2, objs[0]).key.delete()
         # ...and write it to the write-to target TODO
         #   create, update and delete widgets
