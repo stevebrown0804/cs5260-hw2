@@ -1,10 +1,11 @@
-import argparse
-import boto3 as boto3
+import argparse  # https://docs.python.org/3/howto/argparse.html#id1
+import boto3 as boto3  # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Object.delete
+# https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/python/example_code/s3/s3_basics/object_wrapper.py
 from botocore.exceptions import ClientError
-import logging
+import logging  # https://docs.python.org/3/howto/logging.html#when-to-use-logging
 import time
 import json
-import unittest
+import unittest   # https://docs.python.org/3/library/unittest.html
 
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
