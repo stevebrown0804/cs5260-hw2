@@ -56,7 +56,7 @@ def delete(self):
         raise
 
 
-def insert_into_dynamodb(to_write, key_name):
+def insert_into_dynamodb(to_write):
     try:
         dynamo_table = dynamodb.Table("widgets")
         dynamo_table.put_item(Item=to_write)
@@ -94,7 +94,6 @@ while not done:
     if len(objs) > 0:
         the_object = s3.Object(bucket2, objs[0]).key.key
         logger.info('Looking at object: %s', the_object)
-        # bucket2.download_file(the_object, 'the_object')
         bucket2.download_file(the_object, the_object)
         s3.Object(bucket2, objs[0]).key.delete()
         # ...and write it to the write-to target
@@ -104,19 +103,16 @@ while not done:
         with open(the_object, 'r') as a_file:
             data = a_file.read()
         the_data = json.loads(data)
-        # the_data = json.load(the_object)
-
-        print("JSON data: ")
-        print(the_data)
-
+        # print("JSON data: ")
+        # print(the_data)
         if write_to == "usu-cs5260-cocona-web":
             owner = the_data["owner"].replace(" ", "-").lower()
             widgetID = the_data["widgetId"]
             client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID) # + "/" + the_object)
         elif write_to == "dynamoDB":
             # print("TODO: Insert the file into dynamoDB")                                               -- IN PROGRESS
-
-            insert_into_dynamodb(the_data, the_object)
+            the_data["id"] = the_data["widgetId"]   # necessary?
+            insert_into_dynamodb(the_data)
         else:
             logger.error("Unrecognized write-to target")
             print("Unrecognized write-to target")
