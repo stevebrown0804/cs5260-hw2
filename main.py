@@ -7,7 +7,8 @@ from botocore.exceptions import ClientError
 import logging  # https://docs.python.org/3/howto/logging.html#when-to-use-logging
 import time
 import json
-import unittest  # https://docs.python.org/3/library/unittest.html
+# import unittest  # https://docs.python.org/3/library/unittest.html
+
 
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
@@ -19,11 +20,11 @@ parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocon
 args = parser.parse_args()
 if args.read_from:
     read_from = args.read_from
-    print("Reading from: " + read_from)
+    # print("Reading from: " + read_from)
 write_to = None
 if args.write_to:
     write_to = args.write_to
-    print("Writing to: " + write_to)
+    # print("Writing to: " + write_to)
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
 
 # The following two functions (list_objects, delete) are adapted from:
 #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
-#  The ones after that are adapted from those initial adaptations.  /zing
+#  The ones after that are adapted from those initial adaptations.
 def list_objects(bucket):
     try:
         objects = list(bucket.objects.all())
@@ -71,13 +72,9 @@ def insert_into_dynamodb(to_write):
 # be stored as attributes in the DynamoDB object and not as single map or list."
 def process_data_for_dynamoDB(ze_data):
     ze_data["id"] = ze_data["widgetId"]
-    # ....what else? TBD
     if ze_data['otherAttributes']:
-        # print("otherAttributes exists")
         for attr in ze_data['otherAttributes']:
-            # print(attr)
             ze_data[attr['name']] = attr['value']
-            # print(ze_data)
         del ze_data['otherAttributes']
     return ze_data
 
@@ -91,22 +88,20 @@ if write_to == "bucket3" or "usu-cs5260-cocona-web":
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
 
 # check bucket2 for the presence of a widget
-#  if it's there, read it, delete it and add it to <wherever>
-done = False  # Note: Never actually set to true!
-while not done:
+#  if it's there, read it, delete it and add it to the write-to target
+while True:
     objs = list_objects(bucket2)
     if len(objs) > 0:
+        # A file!  Let's take a look...
         the_object = s3.Object(bucket2, objs[0]).key.key
         logger.info('Looking at object: %s', the_object)
         bucket2.download_file(the_object, the_object)
         s3.Object(bucket2, objs[0]).key.delete()
         # ...and write it to the write-to target
-
         with open(the_object, 'r') as a_file:
             data = a_file.read()
         the_data = json.loads(data)
-        # print("JSON data: ")
-        # print(the_data)
+        # We'll (eventually) accommodate create, update and delete requests
         if the_data["type"] == "create":
             if write_to == "usu-cs5260-cocona-web":
                 owner = the_data["owner"].replace(" ", "-").lower()
