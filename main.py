@@ -12,18 +12,6 @@ import unittest  # https://docs.python.org/3/library/unittest.html
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
 
-# When a Widget needs to be stored in Bucket 3, you should serialize it into a JSON string and store that string
-# data. Its key should be based on the following pattern:
-# widgets/{owner}/{widget id}
-# where {owner} is derived from the widget’s owner and {widget id} is derived from the widget’s
-# id. The {owner} part of the key should be computed from the Owner property by 1) replacing
-# spaces with dashes and converting the whole string to lower case.
-#
-# When a widget needs to be stored in the DynamoTable, place every widget attribute in the
-# request its own attribute in the DynamoDB object. In other words, in addition to the widget_id,
-# owner, label, and description, all the properties listed in the otherAttributes properties need to
-# be stored as attributes in the DynamoDB object and not as single map or list.
-
 # Parse the command-line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests or bucket2")
@@ -86,6 +74,18 @@ bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
 
+# "When a Widget needs to be stored in Bucket 3, you should serialize it into a JSON string and store that string
+# data. Its key should be based on the following pattern:
+# widgets/{owner}/{widget id}
+# where {owner} is derived from the widget’s owner and {widget id} is derived from the widget’s
+# id. The {owner} part of the key should be computed from the Owner property by 1) replacing
+# spaces with dashes and converting the whole string to lower case."
+#
+# "When a widget needs to be stored in the DynamoTable, place every widget attribute in the
+# request its own attribute in the DynamoDB object. In other words, in addition to the widget_id,
+# owner, label, and description, all the properties listed in the otherAttributes properties need to
+# be stored as attributes in the DynamoDB object and not as single map or list."
+
 # check bucket2 for the presence of a widget #
 #  if it's there, read it, delete it and add it to <wherever>
 done = False  # Note: Never actually set to true!
@@ -101,15 +101,21 @@ while not done:
         #   LATER: create, update and delete widgets
         #           store the widget(s) in bucket 3 or in the dynamoDB 'widgets' table
         #
+        with open(the_object, 'r') as a_file:
+            data = a_file.read()
+        the_data = json.loads(data)
+        # the_data = json.load(the_object)
+
+        print("JSON data: ")
+        print(the_data)
+
         if write_to == "usu-cs5260-cocona-web":
-            client.upload_file(the_object, write_to, "widgets/" + the_object)
+            owner = the_data["owner"].replace(" ", "-").lower()
+            widgetID = the_data["widgetId"]
+            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID) # + "/" + the_object)
         elif write_to == "dynamoDB":
             # print("TODO: Insert the file into dynamoDB")                                               -- IN PROGRESS
-            with open(the_object, 'r') as a_file:
-                data = a_file.read()
-            the_data = json.loads(data)
-            print("JSON data: ")
-            print(the_data)
+
             insert_into_dynamodb(the_data, the_object)
         else:
             logger.error("Unrecognized write-to target")
