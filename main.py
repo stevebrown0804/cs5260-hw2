@@ -31,8 +31,9 @@ logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
                     format='%(levelname)s: %(message)s', encoding='utf-8', )
 
 
-# The following functions adapted from:
+# The following two functions (list_objects, delete) are adapted from:
 #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
+#  The ones after that are adapted from those initial adaptations.  /zing
 def list_objects(bucket):
     try:
         objects = list(bucket.objects.all())
@@ -48,11 +49,9 @@ def delete(self):
     try:
         self.object.delete()
         self.object.wait_until_not_exists()
-        logger.info(
-            "Deleted object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
+        logger.info("Deleted object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
     except ClientError:
-        logger.exception(
-            "Couldn't delete object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
+        logger.exception("Couldn't delete object '%s' from bucket '%s'.", self.object.key, self.object.bucket_name)
         raise
 
 
@@ -60,13 +59,30 @@ def insert_into_dynamodb(to_write):
     try:
         dynamo_table = dynamodb.Table("widgets")
         dynamo_table.put_item(Item=to_write)
-        logger.info("Put item %s into dynamoDB", to_write)
+        logger.info("Put item into dynamoDB: %s", to_write)
     except ClientError:
         logger.exception("Couldn't insert item %s into dynamoDB", to_write)
         raise
 
 
-# Create the bucket(s)
+# "When a widget needs to be stored in the DynamoTable, place every widget attribute in the
+# request its own attribute in the DynamoDB object. In other words, in addition to the widget_id,
+# owner, label, and description, all the properties listed in the otherAttributes properties need to
+# be stored as attributes in the DynamoDB object and not as single map or list."
+def process_data_for_dynamoDB(ze_data):
+    ze_data["id"] = ze_data["widgetId"]
+    # ....what else? TBD
+    if ze_data['otherAttributes']:
+        # print("otherAttributes exists")
+        for attr in ze_data['otherAttributes']:
+            # print(attr)
+            ze_data[attr['name']] = attr['value']
+            # print(ze_data)
+        del ze_data['otherAttributes']
+    return ze_data
+
+
+# Create the AWS resources/clients/etc.
 s3 = boto3.resource('s3')
 client = boto3.client("s3")
 dynamodb = boto3.resource('dynamodb')
@@ -74,19 +90,7 @@ bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
 
-# "When a Widget needs to be stored in Bucket 3, you should serialize it into a JSON string and store that string
-# data. Its key should be based on the following pattern:
-# widgets/{owner}/{widget id}
-# where {owner} is derived from the widget’s owner and {widget id} is derived from the widget’s
-# id. The {owner} part of the key should be computed from the Owner property by 1) replacing
-# spaces with dashes and converting the whole string to lower case."
-#
-# "When a widget needs to be stored in the DynamoTable, place every widget attribute in the
-# request its own attribute in the DynamoDB object. In other words, in addition to the widget_id,
-# owner, label, and description, all the properties listed in the otherAttributes properties need to
-# be stored as attributes in the DynamoDB object and not as single map or list."
-
-# check bucket2 for the presence of a widget #
+# check bucket2 for the presence of a widget
 #  if it's there, read it, delete it and add it to <wherever>
 done = False  # Note: Never actually set to true!
 while not done:
@@ -97,34 +101,41 @@ while not done:
         bucket2.download_file(the_object, the_object)
         s3.Object(bucket2, objs[0]).key.delete()
         # ...and write it to the write-to target
-        #   LATER: create, update and delete widgets
-        #           store the widget(s) in bucket 3 or in the dynamoDB 'widgets' table
-        #
+
         with open(the_object, 'r') as a_file:
             data = a_file.read()
         the_data = json.loads(data)
         # print("JSON data: ")
         # print(the_data)
-        if write_to == "usu-cs5260-cocona-web":
-            owner = the_data["owner"].replace(" ", "-").lower()
-            widgetID = the_data["widgetId"]
-            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID) # + "/" + the_object)
-        elif write_to == "dynamoDB":
-            # print("TODO: Insert the file into dynamoDB")                                               -- IN PROGRESS
-            the_data["id"] = the_data["widgetId"]   # necessary?
-            insert_into_dynamodb(the_data)
+        if the_data["type"] == "create":
+            if write_to == "usu-cs5260-cocona-web":
+                owner = the_data["owner"].replace(" ", "-").lower()
+                widgetID = the_data["widgetId"]
+                client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID)  # + "/" + the_object)
+            elif write_to == "dynamoDB":
+                the_data = process_data_for_dynamoDB(the_data)
+                insert_into_dynamodb(the_data)
+            else:
+                logger.error("Unrecognized write-to target")
+                print("Unrecognized write-to target")
+                quit()
+            # ...then delete the local copy
+            if os.path.exists(the_object):
+                os.remove(the_object)
+                logger.info("The file: %s has been deleted", the_object)
+            else:
+                logger.info("The file: %s does not exist", the_object)
+        #
+        #   LATER: update and delete widgets
+        #
+        elif the_data["type"] == "update":
+            pass
+        elif the_data["type"] == "delete":
+            pass
         else:
-            logger.error("Unrecognized write-to target")
-            print("Unrecognized write-to target")
-            quit()
-        # ...then delete the local copy
-        if os.path.exists(the_object):
-            os.remove(the_object)
-            logger.info("The file: %s has been deleted", the_object)
-        else:
-            logger.info("The file: %s does not exist", the_object)
+            logger.warning("Unrecognized 'type' field: %s", the_data["type"])
     else:
-        # if it's not, wait 100ms and try again
+        # if len(objs) >= 0, wait 100ms and try again
         time.sleep(0.1)
 
 # Logging examples:
