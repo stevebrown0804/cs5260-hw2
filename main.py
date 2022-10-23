@@ -7,7 +7,6 @@ from botocore.exceptions import ClientError
 import logging  # https://docs.python.org/3/howto/logging.html#when-to-use-logging
 import time
 import json
-# import unittest  # https://docs.python.org/3/library/unittest.html
 
 
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
@@ -132,6 +131,8 @@ while True:
     else:
         # if len(objs) >= 0, wait 100ms and try again
         time.sleep(0.1)
+        print("Sleeping...")
+        quit()
 
 # Logging examples:
 # logger.debug('This message should go to the log file')
