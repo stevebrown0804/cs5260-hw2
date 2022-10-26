@@ -12,29 +12,10 @@ import json
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
 
-# Parse the command-line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests or bucket2")
-parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or bucket3 or dynamoDB")
-args = parser.parse_args()
-if args.read_from:
-    read_from = args.read_from
-    # print("Reading from: " + read_from)
-write_to = None
-if args.write_to:
-    write_to = args.write_to
-    # print("Writing to: " + write_to)
-
-# Initialize logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
-                    format='%(levelname)s: %(message)s', encoding='utf-8', )
-
-
 # The following two functions (list_objects, delete) are adapted from:
 #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html
 #  The ones after that are adapted from those initial adaptations.
-def list_objects(bucket):
+def list_objects(bucket, logger):
     try:
         objects = list(bucket.objects.all())
         logger.info("Got %s objects from bucket '%s'", len(objects), bucket.name)
@@ -45,7 +26,7 @@ def list_objects(bucket):
         return objects
 
 
-def delete(self):
+def delete_from_bucket(self, logger):
     try:
         self.object.delete()
         self.object.wait_until_not_exists()
@@ -55,7 +36,7 @@ def delete(self):
         raise
 
 
-def insert_into_dynamodb(to_write):
+def insert_into_dynamodb(to_write, dynamodb, logger):
     try:
         dynamo_table = dynamodb.Table("widgets")
         dynamo_table.put_item(Item=to_write)
@@ -78,64 +59,88 @@ def process_data_for_dynamoDB(ze_data):
     return ze_data
 
 
-# Create the AWS resources/clients/etc.
-s3 = boto3.resource('s3')
-client = boto3.client("s3")
-dynamodb = boto3.resource('dynamodb')
-bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
-if write_to == "bucket3" or "usu-cs5260-cocona-web":
-    bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
+def run():
+    # Parse the command-line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--read-from",
+                        help="name of the bucket to read from, eg. usu-cs5260-cocona-requests or bucket2")
+    parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or bucket3 or dynamoDB")
+    args = parser.parse_args()
+    if args.read_from:
+        read_from = args.read_from
+        # print("Reading from: " + read_from)
+    write_to = None
+    if args.write_to:
+        write_to = args.write_to
+        # print("Writing to: " + write_to)
 
-# check bucket2 for the presence of a widget
-#  if it's there, read it, delete it and add it to the write-to target
-while True:
-    objs = list_objects(bucket2)
-    if len(objs) > 0:
-        # A file!  Let's take a look...
-        the_object = s3.Object(bucket2, objs[0]).key.key
-        logger.info('Looking at object: %s', the_object)
-        bucket2.download_file(the_object, the_object)
-        s3.Object(bucket2, objs[0]).key.delete()
-        # ...and write it to the write-to target
-        with open(the_object, 'r') as a_file:
-            data = a_file.read()
-        the_data = json.loads(data)
-        # We'll (eventually) accommodate create, update and delete requests
-        if the_data["type"] == "create":
-            if write_to == "usu-cs5260-cocona-web":
-                owner = the_data["owner"].replace(" ", "-").lower()
-                widgetID = the_data["widgetId"]
-                client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID)  # + "/" + the_object)
-            elif write_to == "dynamoDB":
-                the_data = process_data_for_dynamoDB(the_data)
-                insert_into_dynamodb(the_data)
+    # Initialize logging
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
+                        format='%(levelname)s: %(message)s', encoding='utf-8', )
+
+    # Create the AWS resources/clients/etc.
+    s3 = boto3.resource('s3')
+    client = boto3.client("s3")
+    dynamodb = boto3.resource('dynamodb')
+    bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
+    if write_to == "bucket3" or "usu-cs5260-cocona-web":
+        bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
+
+    # check bucket2 for the presence of a widget
+    #  if it's there, read it, delete it and add it to the write-to target
+    while True:
+        objs = list_objects(bucket2, logger)
+        if len(objs) > 0:
+            # A file!  Let's take a look...
+            the_object = s3.Object(bucket2, objs[0]).key.key
+            logger.info('Looking at object: %s', the_object)
+            bucket2.download_file(the_object, the_object)
+            s3.Object(bucket2, objs[0]).key.delete_from_bucket(logger)
+            # ...and write it to the write-to target
+            with open(the_object, 'r') as a_file:
+                data = a_file.read()
+            the_data = json.loads(data)
+            # We'll (eventually) accommodate create, update and delete requests
+            if the_data["type"] == "create":
+                if write_to == "usu-cs5260-cocona-web":
+                    owner = the_data["owner"].replace(" ", "-").lower()
+                    widgetID = the_data["widgetId"]
+                    client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widgetID)  # + "/" + the_object)
+                elif write_to == "dynamoDB":
+                    the_data = process_data_for_dynamoDB(the_data)
+                    insert_into_dynamodb(the_data, dynamodb, logger)
+                else:
+                    logger.error("Unrecognized write-to target")
+                    print("Unrecognized write-to target")
+                    quit()
+                # ...then delete the local copy
+                if os.path.exists(the_object):
+                    os.remove(the_object)
+                    logger.info("The file: %s has been deleted", the_object)
+                else:
+                    logger.info("The file: %s does not exist", the_object)
+            #
+            #   LATER: update and delete widgets
+            #
+            elif the_data["type"] == "update":
+                pass
+            elif the_data["type"] == "delete":
+                pass
             else:
-                logger.error("Unrecognized write-to target")
-                print("Unrecognized write-to target")
-                quit()
-            # ...then delete the local copy
-            if os.path.exists(the_object):
-                os.remove(the_object)
-                logger.info("The file: %s has been deleted", the_object)
-            else:
-                logger.info("The file: %s does not exist", the_object)
-        #
-        #   LATER: update and delete widgets
-        #
-        elif the_data["type"] == "update":
-            pass
-        elif the_data["type"] == "delete":
-            pass
+                logger.warning("Unrecognized 'type' field: %s", the_data["type"])
         else:
-            logger.warning("Unrecognized 'type' field: %s", the_data["type"])
-    else:
-        # if len(objs) >= 0, wait 100ms and try again
-        time.sleep(0.1)
-        print("Sleeping...")
-        quit()
+            # if len(objs) >= 0, wait 100ms and try again
+            time.sleep(0.1)
+            print("Sleeping...")
+            quit()
+
 
 # Logging examples:
 # logger.debug('This message should go to the log file')
 # logger.info('So should this')
 # logger.warning('And this, too')
 # logger.error('And non-ASCII stuff, too, like Øresund and Malmö')
+
+if __name__ == '__main__':
+    run()
