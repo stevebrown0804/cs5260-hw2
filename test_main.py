@@ -15,8 +15,7 @@ class Tests:
         # objects = []
         # objects should be a list of 0 or more objects
         # self.assertGreaterEqual(len(objects), 0, msg="asserting objects.len >= 0, I think")
-        # assert len(objects) >= 0  # , "object list had negative length? O_o"
-        pass
+        assert len(objects) >= 0  # , "object list had negative length? O_o"
 
     # delete(self)
     def test_delete_should_delete_object_from_bucket(self):
@@ -28,10 +27,14 @@ class Tests:
 
     # insert_into_dynamodb(to_write)
     def test_insert_into_dynamodb_should_insert_into_dynamodb(self):
+        # insert into dynamodb
+        # ...then confirm that the item is there
         pass
 
     # process_data_for_dynamoDB(ze_data)
     def test_data_should_be_processed(self):
+        # call process_data_for_dynamodb
+        # a 'otherAttributes' key (which is a dictionary) should be turned into a bunch of separate attributes
         pass
 
 # if __name__ == '__main__':
