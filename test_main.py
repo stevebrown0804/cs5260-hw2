@@ -1,8 +1,9 @@
 import pytest
 # import unittest  # https://docs.python.org/3/library/unittest.html
 import boto3
+import json
 
-from main import list_objects
+from main import list_objects, process_data_for_dynamoDB
 
 
 # class Tests(unittest.TestCase):
@@ -18,12 +19,12 @@ class Tests:
         assert len(objects) >= 0  # , "object list had negative length? O_o"
 
     # delete(self)
-    def test_delete_should_delete_object_from_bucket(self):
-        s3 = boto3.resource('s3')
-        the_bucket = s3.Bucket(f'usu-cs5260-cocona-requests')
-        # ...to do: look for a way to upload data as a file, to a bucket
-        # assert does_not_exist(the_file)
-        pass
+    # def test_delete_should_delete_object_from_bucket(self):
+    #     s3 = boto3.resource('s3')
+    #     the_bucket = s3.Bucket(f'usu-cs5260-cocona-requests')
+    #     # ...to do: look for a way to upload data as a file, to a bucket
+    #     # assert does_not_exist(the_file)
+    #     pass
 
     # insert_into_dynamodb(to_write)
     def test_insert_into_dynamodb_should_insert_into_dynamodb(self):
@@ -33,9 +34,13 @@ class Tests:
 
     # process_data_for_dynamoDB(ze_data)
     def test_data_should_be_processed(self):
+        with open('test-request', 'r') as a_file:
+            data = a_file.read()
+        the_data = json.loads(data)
         # call process_data_for_dynamodb
-        # a 'otherAttributes' key (which is a dictionary) should be turned into a bunch of separate attributes
-        pass
+        process_data_for_dynamoDB(the_data)
+        # ...and check that there's no otherAttributes
+        assert 'otherAttributes' not in the_data
 
 # if __name__ == '__main__':
 #     unittest.main()
