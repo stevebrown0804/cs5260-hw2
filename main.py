@@ -1,5 +1,4 @@
 import os
-# import signal
 import argparse  # https://docs.python.org/3/howto/argparse.html#id1
 import sys
 
@@ -44,13 +43,13 @@ else:
     logger.error('You must specify a write_to target')
     sys.exit()
 
-
-
 # Create the AWS resources/clients/etc.
 s3 = boto3.resource('s3')
 client = boto3.client("s3")
 dynamodb = boto3.resource('dynamodb')
 bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
+sqs = boto3.resource('sqs')
+queue = sqs.get_queue_by_name(QueueName='cs5260-requests')
 if read_from == "bucket2" or "usu-cs5260-cocona-requests":
     read_from = "usu-cs5260-cocona-requests"
 elif read_from == "cs5260-requests":
@@ -62,11 +61,6 @@ else:
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
-
-
-# def signal_handler(sig, frame):
-#     print('You pressed Ctrl+C!')
-#     sys.exit(0)
 
 
 # The following two functions (list_objects, delete) are adapted from:
