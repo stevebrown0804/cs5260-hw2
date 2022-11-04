@@ -127,11 +127,13 @@ def run():
     try:
         # check bucket2 for the presence of a widget
         #  if it's there, read it, delete it and add it to the write-to target
+        no_messages_or_files = True
         while True:
             if read_from == 'usu-cs5260-cocona-requests':
                 # print('going down path: read-from == usu-cs5260-cocona-requests')
                 objs = list_objects(bucket2)
                 if len(objs) > 0:
+                    no_messages_or_files = False
                     # A file!  Let's take a look...
                     the_object = s3.Object(bucket2, objs[0]).key.key
                     logger.info('Looking at object: %s', the_object)
@@ -142,89 +144,64 @@ def run():
                     with open(the_object, 'r') as a_file:
                         data = a_file.read()
                     the_data = json.loads(data)
-            # elif read_from == 'cs5260-requests':
-
-                    # We'll (eventually) accommodate create, update and delete requests
-                    if the_data["type"] == "create":
-                        if write_to == "usu-cs5260-cocona-web":
-                            owner = the_data["owner"].replace(" ", "-").lower()
-                            widget_id = the_data["widgetId"]
-                            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
-                        elif write_to == "dynamoDB":
-                            the_data = process_data_for_dynamoDB(the_data)
-                            insert_into_dynamodb(the_data)
-                        else:
-                            logger.error("Unrecognized write-to target")
-                            print("Unrecognized write-to target")
-                            quit()
-
-                        if read_from == 'usu-cs5260-cocona-requests':
-                            # Delete the local copy
-                            # print("Deleting file: %s", the_object)
-                            if read_from == 'usu-cs5260-cocona-requests':
-                                if os.path.exists(the_object):
-                                    os.remove(the_object)
-                                    logger.info("The file: %s has been deleted", the_object)
-                                else:
-                                    logger.info("The file: %s does not exist", the_object)
-                    #
-                    #   LATER: update and delete widgets
-                    #
-                    elif the_data["type"] == "update":
-                        pass
-                    elif the_data["type"] == "delete":
-                        pass
-                    else:
-                        logger.warning("Unrecognized 'type' field: %s", the_data["type"])
-                else:
-                    sleep_for_a_bit(100, True)
             elif read_from == 'cs5260-requests':
                 # IN PROGRESS
                 # check for messages
                 messages = queue.receive_messages()
                 if len(messages) > 0:
+                    no_messages_or_files = False
                     the_message = messages[0]
                     # print(f'the_message: {the_message}')
                     # msg_body = the_message.body
                     # print(f'msg_body: {msg_body}')
                     the_data = json.loads(the_message.body)
-                    the_object = the_message.message_id
 
-                    # msg_id = the_message.message_id
-                    # print(f'message_id: {msg_id}')
+                    # EDITING HERE
+                    the_object = the_message.message_id
+                    f = open(the_object, "w")
+                    f.write(json.dumps(the_data))
+                    f.close()
 
                     print(f'the_data: {the_data}')
 
-                    # We'll (eventually) accommodate create, update and delete requests
-                    if the_data["type"] == "create":
-                        if write_to == "usu-cs5260-cocona-web":
-                            owner = the_data["owner"].replace(" ", "-").lower()
-                            widget_id = the_data["widgetId"]
-                            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
-                        elif write_to == "dynamoDB":
-                            the_data = process_data_for_dynamoDB(the_data)
-                            insert_into_dynamodb(the_data)
-                        else:
-                            logger.error("Unrecognized write-to target")
-                            print("Unrecognized write-to target")
-                            quit()
-
-                    elif the_data["type"] == "update":
-                        pass
-                    elif the_data["type"] == "delete":
-                        pass
+            # INSERT CODE HERE
+            if not no_messages_or_files:
+                # We'll accommodate create, update and delete requests
+                if the_data["type"] == "create":
+                    if write_to == "usu-cs5260-cocona-web":
+                        owner = the_data["owner"].replace(" ", "-").lower()
+                        widget_id = the_data["widgetId"]
+                        client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
+                    elif write_to == "dynamoDB":
+                        the_data = process_data_for_dynamoDB(the_data)
+                        insert_into_dynamodb(the_data)
                     else:
-                        logger.warning("Unrecognized 'type' field: %s", the_data["type"])
-
-                    ####
-                    #   then delete
-                    the_message.delete()
+                        logger.error("Unrecognized write-to target")
+                        print("Unrecognized write-to target")
+                        quit()
+                elif the_data["type"] == "update":
+                    pass
+                elif the_data["type"] == "delete":
+                    pass
                 else:
-                    sleep_for_a_bit(100, True)
+                    logger.warning("Unrecognized 'type' field: %s", the_data["type"])
+
+                # Delete the local copy
+                # print("Deleting file: %s", the_object)
+                if os.path.exists(the_object):
+                    os.remove(the_object)
+                    logger.info("The file: %s has been deleted", the_object)
+                else:
+                    logger.info("The file: %s does not exist", the_object)
+
+                if read_from == 'cs5260-requests':
+                    # delete the message from the queue
+                    the_message.delete()
+
+            if no_messages_or_files:
+                sleep_for_a_bit(100, False)
             else:
-                print(f'Invalid read-from target: {read_from}')
-                logger.error(f'Invalid read-from target: {read_from}')
-                sys.exit()
+                no_messages_or_files = True
     except KeyboardInterrupt:
         # print("You Ctrl-c'd!")
         sys.exit()
