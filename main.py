@@ -50,17 +50,23 @@ dynamodb = boto3.resource('dynamodb')
 bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
 sqs = boto3.resource('sqs')
 queue = sqs.get_queue_by_name(QueueName='cs5260-requests')
-if read_from == "bucket2" or "usu-cs5260-cocona-requests":
+
+if read_from == "bucket2" or read_from == "usu-cs5260-cocona-requests":
     read_from = "usu-cs5260-cocona-requests"
 elif read_from == "cs5260-requests":
     pass
 else:
-    logger.error('Unrecognized read-from target: %s', read_from)
+    logger.error(f'Unrecognized read-from target: {read_from}')
     sys.exit()
+print(f'read_from target set to: {read_from}')
 
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
+else:
+    print(f'Unrecognized write-to target: {write_to}')
+    logger.error(f'Unrecognized write-to target: {write_to}')
+    sys.exit()
 
 
 # The following two functions (list_objects, delete) are adapted from:
@@ -122,7 +128,9 @@ def run():
         # check bucket2 for the presence of a widget
         #  if it's there, read it, delete it and add it to the write-to target
         while True:
+            # print(f'while True...; read_from == {read_from}')
             if read_from == 'usu-cs5260-cocona-requests':
+                print('going down path: read-from == usu-cs5260-cocona-requests')
                 objs = list_objects(bucket2)
                 if len(objs) > 0:
                     # A file!  Let's take a look...
@@ -169,8 +177,23 @@ def run():
                 else:
                     sleep_for_a_bit(100, True)
             elif read_from == 'cs5260-requests':
-                # TODO: implement
-                pass
+                                                                                                           # IN PROGRESS
+                # print('going down path: read_from == cs5260-requests')
+                # check for messages
+                messages = queue.receive_messages()
+                if len(messages) > 0:
+                    # if messages exist:
+                    #    process
+                    the_message = messages[0]
+                    print(f'the_message: {the_message}')
+                    msg_body = the_message.body
+                    print(f'msg_body: {msg_body}')
+                    the_data = json.loads(msg_body)
+                    print(f'the_data: {the_data}')
+                    #   then delete
+                    the_message.delete()
+                else:
+                    sleep_for_a_bit(100, True)
             else:
                 print(f'Invalid read-from target: {read_from}')
                 logger.error(f'Invalid read-from target: {read_from}')
