@@ -110,59 +110,71 @@ def process_data_for_dynamoDB(ze_data):
     return ze_data
 
 
+def sleep_for_a_bit(milliseconds, output):
+    seconds = milliseconds / 1000
+    time.sleep(seconds)
+    if output:
+        print("Sleeping...")
+
+
 def run():
     try:
         # check bucket2 for the presence of a widget
         #  if it's there, read it, delete it and add it to the write-to target
         while True:
-            objs = list_objects(bucket2)
-            if len(objs) > 0:
-                # A file!  Let's take a look...
-                the_object = s3.Object(bucket2, objs[0]).key.key
-                logger.info('Looking at object: %s', the_object)
-                bucket2.download_file(the_object, the_object)
-                s3.Object(bucket2, objs[0]).key.delete()
+            if read_from == 'usu-cs5260-cocona-requests':
+                objs = list_objects(bucket2)
+                if len(objs) > 0:
+                    # A file!  Let's take a look...
+                    the_object = s3.Object(bucket2, objs[0]).key.key
+                    logger.info('Looking at object: %s', the_object)
+                    bucket2.download_file(the_object, the_object)
+                    s3.Object(bucket2, objs[0]).key.delete()
 
-                # ...and write it to the write-to target
-                with open(the_object, 'r') as a_file:
-                    data = a_file.read()
-                the_data = json.loads(data)
+                    # ...and write it to the write-to target
+                    with open(the_object, 'r') as a_file:
+                        data = a_file.read()
+                    the_data = json.loads(data)
 
-                # We'll (eventually) accommodate create, update and delete requests
-                if the_data["type"] == "create":
-                    if write_to == "usu-cs5260-cocona-web":
-                        owner = the_data["owner"].replace(" ", "-").lower()
-                        widget_id = the_data["widgetId"]
-                        client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
-                    elif write_to == "dynamoDB":
-                        the_data = process_data_for_dynamoDB(the_data)
-                        insert_into_dynamodb(the_data)
+                    # We'll (eventually) accommodate create, update and delete requests
+                    if the_data["type"] == "create":
+                        if write_to == "usu-cs5260-cocona-web":
+                            owner = the_data["owner"].replace(" ", "-").lower()
+                            widget_id = the_data["widgetId"]
+                            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
+                        elif write_to == "dynamoDB":
+                            the_data = process_data_for_dynamoDB(the_data)
+                            insert_into_dynamodb(the_data)
+                        else:
+                            logger.error("Unrecognized write-to target")
+                            print("Unrecognized write-to target")
+                            quit()
+
+                        # ...then delete the local copy
+                        # print("Deleting file: %s", the_object)
+                        if os.path.exists(the_object):
+                            os.remove(the_object)
+                            logger.info("The file: %s has been deleted", the_object)
+                        else:
+                            logger.info("The file: %s does not exist", the_object)
+                    #
+                    #   LATER: update and delete widgets
+                    #
+                    elif the_data["type"] == "update":
+                        pass
+                    elif the_data["type"] == "delete":
+                        pass
                     else:
-                        logger.error("Unrecognized write-to target")
-                        print("Unrecognized write-to target")
-                        quit()
-
-                    # ...then delete the local copy
-                    # print("Deleting file: %s", the_object)
-                    if os.path.exists(the_object):
-                        os.remove(the_object)
-                        logger.info("The file: %s has been deleted", the_object)
-                    else:
-                        logger.info("The file: %s does not exist", the_object)
-                #
-                #   LATER: update and delete widgets
-                #
-                elif the_data["type"] == "update":
-                    pass
-                elif the_data["type"] == "delete":
-                    pass
+                        logger.warning("Unrecognized 'type' field: %s", the_data["type"])
                 else:
-                    logger.warning("Unrecognized 'type' field: %s", the_data["type"])
+                    sleep_for_a_bit(100, True)
+            elif read_from == 'cs5260-requests':
+                # TODO: implement
+                pass
             else:
-                # if len(objs) >= 0, wait 100ms and try again
-                time.sleep(0.1)
-                # print("Sleeping...")
-                # sys.exit()
+                print(f'Invalid read-from target: {read_from}')
+                logger.error(f'Invalid read-from target: {read_from}')
+                sys.exit()
     except KeyboardInterrupt:
         # print("You Ctrl-c'd!")
         sys.exit()
