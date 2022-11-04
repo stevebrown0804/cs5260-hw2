@@ -28,7 +28,7 @@ args = parser.parse_args()
 read_from = None
 if args.read_from:
     read_from = args.read_from
-    print(f'Reading from: {read_from}')
+    logger.info(f'Reading from: {read_from}')
 else:
     print('You must specify a read_from target')
     logger.error('You must specify a read_from target')
@@ -37,7 +37,7 @@ else:
 write_to = None
 if args.write_to:
     write_to = args.write_to
-    print(f'Writing to: {write_to}')
+    logger.info(f'Writing to: {write_to}')
 else:
     print('You must specify a write_to target')
     logger.error('You must specify a write_to target')
@@ -58,7 +58,6 @@ elif read_from == "cs5260-requests":
 else:
     logger.error(f'Unrecognized read-from target: {read_from}')
     sys.exit()
-print(f'read_from target set to: {read_from}')
 
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
@@ -120,6 +119,7 @@ def sleep_for_a_bit(milliseconds, output):
     seconds = milliseconds / 1000
     time.sleep(seconds)
     if output:
+        # pass
         print("Sleeping...")
 
 
@@ -128,9 +128,8 @@ def run():
         # check bucket2 for the presence of a widget
         #  if it's there, read it, delete it and add it to the write-to target
         while True:
-            # print(f'while True...; read_from == {read_from}')
             if read_from == 'usu-cs5260-cocona-requests':
-                print('going down path: read-from == usu-cs5260-cocona-requests')
+                # print('going down path: read-from == usu-cs5260-cocona-requests')
                 objs = list_objects(bucket2)
                 if len(objs) > 0:
                     # A file!  Let's take a look...
@@ -143,6 +142,7 @@ def run():
                     with open(the_object, 'r') as a_file:
                         data = a_file.read()
                     the_data = json.loads(data)
+            # elif read_from == 'cs5260-requests':
 
                     # We'll (eventually) accommodate create, update and delete requests
                     if the_data["type"] == "create":
@@ -158,13 +158,15 @@ def run():
                             print("Unrecognized write-to target")
                             quit()
 
-                        # ...then delete the local copy
-                        # print("Deleting file: %s", the_object)
-                        if os.path.exists(the_object):
-                            os.remove(the_object)
-                            logger.info("The file: %s has been deleted", the_object)
-                        else:
-                            logger.info("The file: %s does not exist", the_object)
+                        if read_from == 'usu-cs5260-cocona-requests':
+                            # Delete the local copy
+                            # print("Deleting file: %s", the_object)
+                            if read_from == 'usu-cs5260-cocona-requests':
+                                if os.path.exists(the_object):
+                                    os.remove(the_object)
+                                    logger.info("The file: %s has been deleted", the_object)
+                                else:
+                                    logger.info("The file: %s does not exist", the_object)
                     #
                     #   LATER: update and delete widgets
                     #
@@ -177,19 +179,44 @@ def run():
                 else:
                     sleep_for_a_bit(100, True)
             elif read_from == 'cs5260-requests':
-                                                                                                           # IN PROGRESS
-                # print('going down path: read_from == cs5260-requests')
+                # IN PROGRESS
                 # check for messages
                 messages = queue.receive_messages()
                 if len(messages) > 0:
-                    # if messages exist:
-                    #    process
                     the_message = messages[0]
-                    print(f'the_message: {the_message}')
-                    msg_body = the_message.body
-                    print(f'msg_body: {msg_body}')
-                    the_data = json.loads(msg_body)
+                    # print(f'the_message: {the_message}')
+                    # msg_body = the_message.body
+                    # print(f'msg_body: {msg_body}')
+                    the_data = json.loads(the_message.body)
+                    the_object = the_message.message_id
+
+                    # msg_id = the_message.message_id
+                    # print(f'message_id: {msg_id}')
+
                     print(f'the_data: {the_data}')
+
+                    # We'll (eventually) accommodate create, update and delete requests
+                    if the_data["type"] == "create":
+                        if write_to == "usu-cs5260-cocona-web":
+                            owner = the_data["owner"].replace(" ", "-").lower()
+                            widget_id = the_data["widgetId"]
+                            client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
+                        elif write_to == "dynamoDB":
+                            the_data = process_data_for_dynamoDB(the_data)
+                            insert_into_dynamodb(the_data)
+                        else:
+                            logger.error("Unrecognized write-to target")
+                            print("Unrecognized write-to target")
+                            quit()
+
+                    elif the_data["type"] == "update":
+                        pass
+                    elif the_data["type"] == "delete":
+                        pass
+                    else:
+                        logger.warning("Unrecognized 'type' field: %s", the_data["type"])
+
+                    ####
                     #   then delete
                     the_message.delete()
                 else:
