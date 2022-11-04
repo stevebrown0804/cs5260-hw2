@@ -14,29 +14,51 @@ import json
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
 
-# Parse the command-line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests or bucket2")
-parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or bucket3 or dynamoDB")
-args = parser.parse_args()
-if args.read_from:
-    read_from = args.read_from
-    # print("Reading from: " + read_from)
-write_to = None
-if args.write_to:
-    write_to = args.write_to
-    # print("Writing to: " + write_to)
-
 # Initialize logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
                     format='%(levelname)s: %(message)s', encoding='utf-8', )
+
+# Parse the command-line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--read-from", help="name of the bucket to read from, eg. usu-cs5260-cocona-requests, bucket2 or "
+                                        "cs5260-requests")
+parser.add_argument("--write-to", help="target to write to, eg. usu-cs5260-cocona-web or bucket3 or dynamoDB")
+args = parser.parse_args()
+
+read_from = None
+if args.read_from:
+    read_from = args.read_from
+    print(f'Reading from: {read_from}')
+else:
+    print('You must specify a read_from target')
+    logger.error('You must specify a read_from target')
+    sys.exit()
+
+write_to = None
+if args.write_to:
+    write_to = args.write_to
+    print(f'Writing to: {write_to}')
+else:
+    print('You must specify a write_to target')
+    logger.error('You must specify a write_to target')
+    sys.exit()
+
+
 
 # Create the AWS resources/clients/etc.
 s3 = boto3.resource('s3')
 client = boto3.client("s3")
 dynamodb = boto3.resource('dynamodb')
 bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
+if read_from == "bucket2" or "usu-cs5260-cocona-requests":
+    read_from = "usu-cs5260-cocona-requests"
+elif read_from == "cs5260-requests":
+    pass
+else:
+    logger.error('Unrecognized read-from target: %s', read_from)
+    sys.exit()
+
 if write_to == "bucket3" or "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
