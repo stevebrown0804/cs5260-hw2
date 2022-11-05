@@ -100,7 +100,21 @@ def insert_into_dynamodb(to_write):
         dynamo_table.put_item(Item=to_write)
         logger.info("Put item into dynamoDB: %s", to_write)
     except ClientError:
-        logger.exception("Couldn't insert item %s into dynamoDB", to_write)
+        logger.exception(f"Couldn't insert item {to_write} into dynamoDB")
+        raise
+
+
+def delete_from_dynamodb(data_to_delete):
+    try:
+        dynamo_table = dynamodb.Table("widgets")
+        # to_delete_dict = {'id': data_to_delete['widgetId'], 'owner': data_to_delete['owner'],
+        #                   'requestId': data_to_delete['requestId']}
+        to_delete_dict = {'id': data_to_delete['widgetId']}
+        dynamo_table.delete_item(Key=to_delete_dict)
+        logger.info(f"Deleted item from dynamoDB: {data_to_delete}")
+    except ClientError:
+        print(f"Couldn't delete item {data_to_delete} from dynamoDB")
+        logger.exception(f"Couldn't delete item {data_to_delete} from dynamoDB")
         raise
 
 
@@ -173,13 +187,22 @@ def run():
                     else:
                         logger.error("Unrecognized write-to target")
                         print("Unrecognized write-to target")
-                        quit()
+                        sys.exit()
                 elif the_data["type"] == "update":
                     # TODO: update requests
+                    print("UPDATE RECEIVED & IGNORED \\(^ ^ )/")
                     pass
                 elif the_data["type"] == "delete":
-                    # TODO: delete requests
-                    pass
+                    if write_to == "usu-cs5260-cocona-web":
+                        to_delete = {'Objects' : [{'Key': the_object}]}
+                        bucket3.delete_objects(to_delete)
+                    elif write_to == "dynamoDB":
+                        delete_from_dynamodb(the_data)
+                        logger.info(f'Deleted item from dynamoDB: {the_object}')
+                    else:
+                        logger.error("Unrecognized write-to target")
+                        print("Unrecognized write-to target")
+                        sys.exit()
                 else:
                     logger.warning(f'Unrecognized "type" field: {the_data["type"]}')
 
