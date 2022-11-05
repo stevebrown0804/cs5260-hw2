@@ -147,7 +147,6 @@ def run():
                         data = a_file.read()
                     the_data = json.loads(data)
             elif read_from == 'cs5260-requests':
-                # IN PROGRESS
                 # check for messages
                 messages = queue.receive_messages()
                 if len(messages) > 0:
@@ -160,7 +159,6 @@ def run():
                     f.close()
                     # print(f'the_data: {the_data}')
 
-            # INSERT CODE HERE
             if not no_messages_or_files:
                 # We'll accommodate create, update and delete requests
                 if the_data["type"] == "create":
@@ -177,8 +175,10 @@ def run():
                         print("Unrecognized write-to target")
                         quit()
                 elif the_data["type"] == "update":
+                    # TODO: update requests
                     pass
                 elif the_data["type"] == "delete":
+                    # TODO: delete requests
                     pass
                 else:
                     logger.warning(f'Unrecognized "type" field: {the_data["type"]}')
