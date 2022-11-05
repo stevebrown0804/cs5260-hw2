@@ -1,9 +1,8 @@
 import pytest
-# import unittest  # https://docs.python.org/3/library/unittest.html
 import boto3
 import json
 
-from main import list_objects, process_data_for_dynamoDB
+from main import list_objects, process_data_for_dynamoDB, sleep_for_a_bit, delete_from_dynamodb
 
 
 # class Tests(unittest.TestCase):
@@ -13,9 +12,7 @@ class Tests:
         s3 = boto3.resource('s3')
         the_bucket = s3.Bucket(f'usu-cs5260-cocona-requests')
         objects = list_objects(the_bucket)
-        # objects = []
         # objects should be a list of 0 or more objects
-        # self.assertGreaterEqual(len(objects), 0, msg="asserting objects.len >= 0, I think")
         assert len(objects) >= 0  # , "object list had negative length? O_o"
 
     # delete(self)
@@ -41,6 +38,16 @@ class Tests:
         process_data_for_dynamoDB(the_data)
         # ...and check that there's no otherAttributes
         assert 'otherAttributes' not in the_data
+
+    def test_sleeping_should_always_return_true(self):
+        ret = sleep_for_a_bit(100, False)
+        assert ret == True
+
+    def test_delete_from_dynamodb_should_return_true_when_successful(self):
+        with open('test-request', 'r') as a_file:
+            data = a_file.read()
+        the_data = json.loads(data)
+        assert delete_from_dynamodb(the_data) == True
 
 # if __name__ == '__main__':
 #     unittest.main()

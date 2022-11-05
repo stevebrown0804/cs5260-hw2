@@ -32,7 +32,7 @@ if args.read_from:
 else:
     print('You must specify a read_from target')
     logger.error('You must specify a read_from target')
-    sys.exit()
+    # sys.exit()
 
 write_to = None
 if args.write_to:
@@ -41,14 +41,14 @@ if args.write_to:
 else:
     print('You must specify a write_to target')
     logger.error('You must specify a write_to target')
-    sys.exit()
+    # sys.exit()
 
 # Create the AWS resources/clients/etc.
 s3 = boto3.resource('s3')
 client = boto3.client("s3")
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name="us-east-1")
 bucket2 = s3.Bucket(f'usu-cs5260-cocona-requests')
-sqs = boto3.resource('sqs')
+sqs = boto3.resource('sqs', region_name="us-east-1")
 queue = sqs.get_queue_by_name(QueueName='cs5260-requests')
 
 if read_from == "bucket2" or read_from == "usu-cs5260-cocona-requests":
@@ -57,7 +57,7 @@ elif read_from == "cs5260-requests":
     pass
 else:
     logger.error(f'Unrecognized read-from target: {read_from}')
-    sys.exit()
+    # sys.exit()
 
 if write_to == "bucket3" or write_to == "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
@@ -67,7 +67,7 @@ elif write_to == 'dynamoDB':
 else:
     print(f'Unrecognized write-to target: {write_to}')
     logger.error(f'Unrecognized write-to target: {write_to}')
-    sys.exit()
+    # sys.exit()
 
 
 # The following two functions (list_objects, delete) are adapted from:
@@ -110,10 +110,12 @@ def delete_from_dynamodb(data_to_delete):
         to_delete_dict = {'id': data_to_delete['widgetId']}
         dynamo_table.delete_item(Key=to_delete_dict)
         logger.info(f"Deleted item from dynamoDB: {data_to_delete}")
+        return True
     except ClientError:
         print(f"Couldn't delete item {data_to_delete} from dynamoDB")
         logger.exception(f"Couldn't delete item {data_to_delete} from dynamoDB")
-        raise
+        #raise
+        return False
 
 
 # "When a widget needs to be stored in the DynamoTable, place every widget attribute in the
@@ -134,8 +136,8 @@ def sleep_for_a_bit(milliseconds, output):
     seconds = milliseconds / 1000
     time.sleep(seconds)
     if output:
-        # pass
         print("Sleeping...")
+    return True
 
 
 def run():
@@ -191,9 +193,9 @@ def run():
                         print("Unrecognized write-to target")
                         sys.exit()
                 elif the_data["type"] == "update":
-                    print(f'Doing an update...')
+                    # print(f'Doing an update...')
                     if write_to == "usu-cs5260-cocona-web":
-                        print(f'...to bucket3!')
+                        # print(f'...to bucket3!')
                         # the same code as with creating
                         owner = the_data["owner"].replace(" ", "-").lower()
                         widget_id = the_data["widgetId"]
@@ -201,7 +203,7 @@ def run():
                         print(f"Updated {the_object} on usu-cs5260-cocona-web")
                         logger.info(f"Updated {the_object} on usu-cs5260-cocona-web")
                     elif write_to == "dynamoDB":
-                        print(f'...to dynamoDB!')
+                        # print(f'...to dynamoDB!')
                         # widgets_table = dynamodb.Table('widgets')
                         # pkey = {'id': the_data['widgetId']}
                         # to_update_dict = process_data_for_dynamoDB(the_data)
@@ -250,7 +252,7 @@ def run():
                     the_message.delete()
 
             if no_messages_or_files:
-                sleep_for_a_bit(100, True)
+                sleep_for_a_bit(100, False)  # True)
             else:
                 no_messages_or_files = True
     except KeyboardInterrupt:
