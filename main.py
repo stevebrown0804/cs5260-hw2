@@ -59,9 +59,11 @@ else:
     logger.error(f'Unrecognized read-from target: {read_from}')
     sys.exit()
 
-if write_to == "bucket3" or "usu-cs5260-cocona-web":
+if write_to == "bucket3" or write_to == "usu-cs5260-cocona-web":
     write_to = "usu-cs5260-cocona-web"
     bucket3 = s3.Bucket(f'usu-cs5260-cocona-web')
+elif write_to == 'dynamoDB':
+    pass
 else:
     print(f'Unrecognized write-to target: {write_to}')
     logger.error(f'Unrecognized write-to target: {write_to}')
@@ -151,18 +153,12 @@ def run():
                 if len(messages) > 0:
                     no_messages_or_files = False
                     the_message = messages[0]
-                    # print(f'the_message: {the_message}')
-                    # msg_body = the_message.body
-                    # print(f'msg_body: {msg_body}')
                     the_data = json.loads(the_message.body)
-
-                    # EDITING HERE
                     the_object = the_message.message_id
                     f = open(the_object, "w")
                     f.write(json.dumps(the_data))
                     f.close()
-
-                    print(f'the_data: {the_data}')
+                    # print(f'the_data: {the_data}')
 
             # INSERT CODE HERE
             if not no_messages_or_files:
@@ -173,6 +169,7 @@ def run():
                         widget_id = the_data["widgetId"]
                         client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
                     elif write_to == "dynamoDB":
+                        print(f'Writing to dynamodb')
                         the_data = process_data_for_dynamoDB(the_data)
                         insert_into_dynamodb(the_data)
                     else:
@@ -184,10 +181,10 @@ def run():
                 elif the_data["type"] == "delete":
                     pass
                 else:
-                    logger.warning("Unrecognized 'type' field: %s", the_data["type"])
+                    logger.warning(f'Unrecognized "type" field: {the_data["type"]}')
 
                 # Delete the local copy
-                # print("Deleting file: %s", the_object)
+                print(f"Deleting file: {the_object}")
                 if os.path.exists(the_object):
                     os.remove(the_object)
                     logger.info("The file: %s has been deleted", the_object)
@@ -196,10 +193,11 @@ def run():
 
                 if read_from == 'cs5260-requests':
                     # delete the message from the queue
+                    # print(f'Deleting message: {the_message}')
                     the_message.delete()
 
             if no_messages_or_files:
-                sleep_for_a_bit(100, False)
+                sleep_for_a_bit(100, True)
             else:
                 no_messages_or_files = True
     except KeyboardInterrupt:
