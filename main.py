@@ -107,8 +107,6 @@ def insert_into_dynamodb(to_write):
 def delete_from_dynamodb(data_to_delete):
     try:
         dynamo_table = dynamodb.Table("widgets")
-        # to_delete_dict = {'id': data_to_delete['widgetId'], 'owner': data_to_delete['owner'],
-        #                   'requestId': data_to_delete['requestId']}
         to_delete_dict = {'id': data_to_delete['widgetId']}
         dynamo_table.delete_item(Key=to_delete_dict)
         logger.info(f"Deleted item from dynamoDB: {data_to_delete}")
@@ -194,8 +192,9 @@ def run():
                     pass
                 elif the_data["type"] == "delete":
                     if write_to == "usu-cs5260-cocona-web":
-                        to_delete = {'Objects' : [{'Key': the_object}]}
-                        bucket3.delete_objects(to_delete)
+                        s3.Object("usu-cs5260-cocona-web", the_object).delete()
+                        logger.info(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
+                        print(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
                     elif write_to == "dynamoDB":
                         delete_from_dynamodb(the_data)
                         logger.info(f'Deleted item from dynamoDB: {the_object}')
