@@ -126,6 +126,7 @@ def process_data_for_dynamoDB(ze_data):
         for attr in ze_data['otherAttributes']:
             ze_data[attr['name']] = attr['value']
         del ze_data['otherAttributes']
+    del ze_data['type']
     return ze_data
 
 
@@ -144,7 +145,6 @@ def run():
         no_messages_or_files = True
         while True:
             if read_from == 'usu-cs5260-cocona-requests':
-                # print('going down path: read-from == usu-cs5260-cocona-requests')
                 objs = list_objects(bucket2)
                 if len(objs) > 0:
                     no_messages_or_files = False
@@ -178,23 +178,54 @@ def run():
                         owner = the_data["owner"].replace(" ", "-").lower()
                         widget_id = the_data["widgetId"]
                         client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
+                        print(f"Object: {the_object} has been created in usu-cs5260-cocona-web")
+                        logger.info(f"Object: {the_object} has been created in usu-cs5260-cocona-web")
                     elif write_to == "dynamoDB":
-                        print(f'Writing to dynamodb')
+                        # print(f'Writing to dynamodb')
                         the_data = process_data_for_dynamoDB(the_data)
                         insert_into_dynamodb(the_data)
+                        print(f"Object: {the_object} has been created in dynamoDB")
+                        logger.info(f"Object: {the_object} has been created in dynamoDB")
                     else:
                         logger.error("Unrecognized write-to target")
                         print("Unrecognized write-to target")
                         sys.exit()
                 elif the_data["type"] == "update":
-                    # TODO: update requests
-                    print("UPDATE RECEIVED & IGNORED \\(^ ^ )/")
-                    pass
+                    print(f'Doing an update...')
+                    if write_to == "usu-cs5260-cocona-web":
+                        print(f'...to bucket3!')
+                        # the same code as with creating
+                        owner = the_data["owner"].replace(" ", "-").lower()
+                        widget_id = the_data["widgetId"]
+                        client.upload_file(the_object, write_to, "widgets/" + owner + "/" + widget_id)
+                        print(f"Updated {the_object} on usu-cs5260-cocona-web")
+                        logger.info(f"Updated {the_object} on usu-cs5260-cocona-web")
+                    elif write_to == "dynamoDB":
+                        print(f'...to dynamoDB!')
+                        # widgets_table = dynamodb.Table('widgets')
+                        # pkey = {'id': the_data['widgetId']}
+                        # to_update_dict = process_data_for_dynamoDB(the_data)
+                        # del to_update_dict["id"]
+                        # str = "SET "
+                        # for x in to_update_dict:
+                        #     print (f'{x}: {to_update_dict[x]}')
+                        #     str += f'{x}: {to_update_dict[x]},'
+                        #
+                        # widgets_table.update_item(Key=pkey, AttributeUpdates=str)
+                        # STOPGAP
+                        the_data = process_data_for_dynamoDB(the_data)
+                        insert_into_dynamodb(the_data)
+                        print(f"Object: {the_object} has been updated in dynamoDB")
+                        logger.info(f"Object: {the_object} has been updated in dynamoDB")
+                    else:
+                        logger.error("Unrecognized write-to target")
+                        print("Unrecognized write-to target")
+                        sys.exit()
                 elif the_data["type"] == "delete":
                     if write_to == "usu-cs5260-cocona-web":
                         s3.Object("usu-cs5260-cocona-web", the_object).delete()
-                        logger.info(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
-                        print(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
+                        # logger.info(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
+                        # print(f'Object: {the_object} deleted from usu-cs5260-cocona-web')
                     elif write_to == "dynamoDB":
                         delete_from_dynamodb(the_data)
                         logger.info(f'Deleted item from dynamoDB: {the_object}')
@@ -206,7 +237,7 @@ def run():
                     logger.warning(f'Unrecognized "type" field: {the_data["type"]}')
 
                 # Delete the local copy
-                print(f"Deleting file: {the_object}")
+                # print(f"Deleting file: {the_object}")
                 if os.path.exists(the_object):
                     os.remove(the_object)
                     logger.info("The file: %s has been deleted", the_object)
