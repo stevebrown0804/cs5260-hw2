@@ -2,7 +2,7 @@ import pytest
 import boto3
 import json
 
-from main import list_objects, process_data_for_dynamoDB, sleep_for_a_bit, delete_from_dynamodb
+from consumer import list_objects, process_data_for_dynamoDB, sleep_for_a_bit, delete_from_dynamodb
 
 
 # class Tests(unittest.TestCase):
