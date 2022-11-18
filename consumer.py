@@ -9,6 +9,8 @@ from botocore.exceptions import ClientError
 import logging  # https://docs.python.org/3/howto/logging.html#when-to-use-logging
 import time
 import json
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning, module='botocore.client')
 
 # Reminder: To update the credentials for AWS, get them from the learner lab module (under AWS details->AWS CLI)
 # and paste them into C:\Users\steve\.aws\credentials
