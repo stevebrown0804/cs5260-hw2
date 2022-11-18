@@ -35,15 +35,17 @@ def lambda_handler(event):  # , context):
     #     'body': json.dumps('Hello from Lambda!')
     # }
 
-    # TODO implement
     # In particular...
     #   Take a widget requests (as...JSON? TBD)
     if event["body"] is None:
         return formatError({"statusCode": 499, "code": 'UNEXPECTED_VALUE', "message": 'Empty event body'})
+    # Otherwise...
 
     #   Transform it into...(JSON, again? *shrug*)
-    #   Add it to an SNS(?) queue
-    queue.send_message(MessageBody='heyo---')
+    # TODO transform? tbd
+
+    #   Add it to an SQS queue
+    queue.send_message(MessageBody=f'{event["body"]}')
 
     return formatResponse("Success?")
     # print("About to return: " + str(event["body"]["firstName"]))
