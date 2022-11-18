@@ -57,6 +57,7 @@ def formatResponse(body):
         "body": body
     }
 
+
 # var formatError = function(error){
 #     return {
 #         "statusCode": error.statusCode,
@@ -69,6 +70,21 @@ def formatResponse(body):
 #     };
 # }
 
+def formatError(error):
+    return {
+        "statusCode": error.statusCode,
+        "headers": {
+            "Content-Type": "text/plain",
+            "x-amzn-errorType": error.code
+        },
+        "isBase64Encoded": False,
+        "body": error.code + ": " + error.message,
+    }
+
+
 # var serialize = function(object){
 #   return JSON.stringify(object, null, 2);
 # }
+
+def serialize(obj):
+    return json.dumps(obj)
