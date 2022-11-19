@@ -1,2 +1,2 @@
 # cs5260-hw2
-initial commit
+It is what it is.
