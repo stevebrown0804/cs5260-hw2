@@ -7,8 +7,8 @@ from lambda_function import formatResponse, formatError, lambda_handler
 
 class Tests:
     def test_formatResponse_with_body_should_return_200(self):
-        response = formatResponse("testValue")
-        assert response["body"] == "testValue"
+        resp = formatResponse("testValue")
+        assert resp["body"] == "testValue"
 
     def test_formatError_should_return_error_code_pass_to_it(self):
         resp = formatError({"statusCode": 499, "code": 'UNEXPECTED_VALUE', "message": 'Test message'})
