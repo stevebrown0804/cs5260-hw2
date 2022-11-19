@@ -1,0 +1,33 @@
+Create requests:
+
+{"type":"create","requestId":"28993819-6edf-426a-b138-271a213d0978","widgetId":"bb763e3b-352f-4d47-bb00-c2a6cba7839b","owner":"Sue Smith","label":"MNWTT","description":"HOPIYCXWUAEZOJCPFTIZWLYZXIXTFSXAJDCQKGCVVG","otherAttributes":[{"name":"size","value":"808"},{"name":"size-unit","value":"cm"},{"name":"width","value":"851"},{"name":"width-unit","value":"cm"},{"name":"price","value":"16.93"},{"name":"quantity","value":"218"}]}
+
+{"type":"create","requestId":"ddc7ef00-f9f2-4390-9713-64f505d9f2e3","widgetId":"85f9b443-29dd-4f11-87ff-e4344bd68a55","owner":"Mary Matthews","label":"QIH","description":"NLPAKMHJXRODXJRVGQUPLZUVFFKXHKQZJLIJGBIKXJVTMOFRIDGEFKGTGZZUQOWPYKQOKCSUB","otherAttributes":[{"name":"height-unit","value":"cm"}]}
+
+{"type":"create","requestId":"ab728c59-4fed-410a-a8d1-f194f09380df","widgetId":"9fc23d88-ec67-47b5-bee6-05bf603a4545","owner":"Henry Hops","label":"CIZSFK","description":"FVQQYPUZSIHGKQULDJTYFIOXHFZMOCWYEMIGKOADKCPVHMOWLXYUMWHGZVXLRBSUUQRFLVWGZVDYJZFPSOXSLK","otherAttributes":[{"name":"color","value":"yellow"},{"name":"height-unit","value":"cm"},{"name":"width-unit","value":"cm"},{"name":"rating","value":"2.3206315"},{"name":"vendor","value":""}]}
+
+{"type":"create","requestId":"1674b501-dd98-48f5-9a4f-fca358721935","widgetId":"1dc1c120-ac37-4c8e-ae6f-a20bcdc49e88","owner":"John Jones","label":"OMCWZS","description":"BZNQVOTCOYLKRBSKAIDJDYBSOYRRGIHCYVVOOZJZBCAPBSZRDEMFPYDUDMGXFPGWJKONCVJAUIMGIBMVFJFLQUMSR","otherAttributes":[{"name":"size","value":"484"},{"name":"rating","value":"2.7634"},{"name":"price","value":"65.44"}]}
+
+-------------------------------------------------------------------------------
+Update requests:
+
+{"type":"update","requestId":"1e1f9576-0a13-4aab-8f8f-a567c989d9b3","widgetId":"e25941bd-f31d-4839-b175-28770128382f","owner":"Henry Hops","description":"ZHSKY","otherAttributes":[{"name":"size-unit","value":"cm"},{"name":"height","value":"160"},{"name":"height-unit","value":"cm"},{"name":"width","value":"26"},{"name":"note","value":"UYYNSICBNANJWRTRHEITNJCRRTVGKXHGUGJMUTVIEFKLEZRPRQQILNPXALVTDIKTUFTLFKIJTKIQLEZWMPNAQYRDAXDSUIWYUJGCQXDFDMJQYQMLISPKYCUDINUSWFIBWWAJNISOTYSMAHTIECNNWHPLMSO"}]}
+
+-------------------------------------------------------------------------------
+Delete requests:
+
+{"type":"delete","requestId":"80b81186-d94d-4c34-967c-8b0cf7e0b2b5","widgetId":"85f9b443-29dd-4f11-87ff-e4344bd68a55","owner":"Mary Matthews"}
+
+-------------------------------------------------------------------------------
+Additional delete requests:
+
+{"type":"delete","requestId":"331bc277-bbe8-4f95-8e94-19d5b7e2f80c","widgetId":"bba4b1cf-9040-4e68-ad04-378934c7d32a","owner":"Mary Matthews"}
+
+{"type":"delete","requestId":"b8235366-81ed-497e-9f18-2f2ff63e126a","widgetId":"49d4fba6-6b01-4c00-a8d5-651400fa899c","owner":"Mary Matthews"}
+
+-------------------------------------------------------------------------------
+Additional create requests:
+
+{"type":"create","requestId":"115aa971-cf6b-4176-a4bc-f7c1853e009e","widgetId":"827f591c-be71-4f34-8951-01ba680f3e49","owner":"Mary Matthews","label":"CWNN","description":"ARPFHWFAEYWMFQJMOUWOAVJLYMMOVUOOOWJGTJYZKUBVWVOFQJOYKLSKEBKHRTJRYPOSKSHZZHOKBPMJZFX","otherAttributes":[{"name":"color","value":"green"},{"name":"width","value":"455"},{"name":"quantity","value":"207"}]}
+
+{"type":"create","requestId":"26bbec84-5a77-452c-a5fc-529a25006796","widgetId":"8d90d0a6-9392-4a8d-b723-c92c4bc732e0","owner":"Mary Matthews","label":"YLD","description":"ZSZNRXNDOVCMWNQOKRNOHIBGTEULVBEBCDRAISAINYHGWZICNDKNFBGBZKGCQ","otherAttributes":[{"name":"color","value":"blue"},{"name":"size","value":"240"},{"name":"size-unit","value":"cm"},{"name":"height","value":"780"},{"name":"width-unit","value":"cm"},{"name":"length-unit","value":"cm"}]}
