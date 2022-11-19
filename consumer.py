@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore', category=FutureWarning, module='botocore.clien
 
 # Initialize logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, filename='logging.log', filemode='w',
+logging.basicConfig(level=logging.INFO, filename='logging_consumer.log', filemode='w',
                     format='%(levelname)s: %(message)s', encoding='utf-8', )
 
 # Parse the command-line arguments
